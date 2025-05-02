@@ -1,0 +1,14 @@
+[project]
+name = "koreanrecognition"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "alibabacloud-alimt20181012>=1.4.0",
+    "dashscope>=1.23.2",
+    "pyaudio>=0.2.14",
+    "python-box>=7.3.2",
+    "python-dotenv>=1.1.0",
+    "sounddevice>=0.5.1",
+]
