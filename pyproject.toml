@@ -8,6 +8,7 @@ dependencies = [
     "alibabacloud-alimt20181012>=1.4.0",
     "dashscope>=1.23.2",
     "pyaudio>=0.2.14",
+    "pytest>=8.3.5",
     "python-box>=7.3.2",
     "python-dotenv>=1.1.0",
     "sounddevice>=0.5.1",
