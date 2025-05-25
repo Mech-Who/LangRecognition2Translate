@@ -15,7 +15,8 @@ from dashscope.audio.asr import Recognition, RecognitionCallback, RecognitionRes
 from dotenv import load_dotenv
 
 # custom
-from translater import AliTranslator
+from src.core.translater import AliTranslator
+from src.utils.constants import BlockSize, Language, SampleRate, VoiseChannels
 
 
 def init_dashscope_api_key():
@@ -124,12 +125,12 @@ def main():
     print("Initializing ...")
 
     # Set recording parameters
-    sample_rate = 16000  # sampling rate (Hz)
-    channels = 1  # mono channel
+    sample_rate = SampleRate.SR_16000  # sampling rate (Hz)
+    channels = VoiseChannels.CHANNEL_MONO  # mono channel
     format_pcm = "pcm"  # the format of the audio data
-    block_size = 3200  # number of frames per buffer
-    from_lang = "ko"
-    to_lang = "zh"
+    block_size = BlockSize.BS_3200  # number of frames per buffer
+    from_lang = Language.KOREAN
+    to_lang = Language.CHINESE
 
     # Create the recognition callback
     callback = TranslateCallback(
