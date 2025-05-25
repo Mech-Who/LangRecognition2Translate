@@ -1,42 +1,21 @@
 # For prerequisites running the following sample, visit https://help.aliyun.com/document_detail/611472.html
-
-import os
-
-from dashscope.audio.asr import Recognition
-from dotenv import load_dotenv
-
-# 若没有将API Key配置到环境变量中，需将下面这行代码注释放开，并将apiKey替换为自己的API Key
-# import dashscope
-# dashscope.api_key = "apiKey"
-load_dotenv()
-
-
 # For prerequisites running the following sample, visit https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen
+# Paraformer_v2 reference: https://help.aliyun.com/zh/model-studio/paraformer-real-time-speech-recognition-python-api
+# Language code reference: https://help.aliyun.com/zh/machine-translation/support/supported-languages-and-codes?spm=a2c4g.11186623.0.0.f3b34b8acaDlFM
+
+# standard
+import os
 import signal  # for keyboard events handling (press "Ctrl+C" to terminate recording)
 import sys
 
+# third-party
 import dashscope
 import pyaudio
-from dashscope.audio.asr import *
+from dashscope.audio.asr import Recognition, RecognitionCallback, RecognitionResult
+from dotenv import load_dotenv
 
+# custom
 from translater import AliTranslator
-
-mic = None
-stream = None
-
-# Set recording parameters
-sample_rate = 16000  # sampling rate (Hz)
-channels = 1  # mono channel
-dtype = "int16"  # data type
-format_pcm = "pcm"  # the format of the audio data
-block_size = 3200  # number of frames per buffer
-
-translator = AliTranslator(
-    access_key_id=os.getenv("ALIYUN_ACCESS_KEY_ID"),
-    access_key_secret=os.getenv("ALIYUN_ACCESS_KEY_SECRET"),
-    endpoint="mt.aliyuncs.com",
-    qps=50,
-)
 
 
 def init_dashscope_api_key():
@@ -53,38 +32,61 @@ def init_dashscope_api_key():
         dashscope.api_key = "<your-dashscope-api-key>"  # set API-key manually
 
 
+load_dotenv()
+init_dashscope_api_key()
+
+
 # Real-time speech recognition callback
-class Callback(RecognitionCallback):
+class TranslateCallback(RecognitionCallback):
+    def __init__(
+        self, from_lang, to_lang, *, sample_rate, channels, block_size, device_name
+    ):
+        # translator
+        self.translator = AliTranslator(
+            access_key_id=os.getenv("ALIYUN_ACCESS_KEY_ID"),
+            access_key_secret=os.getenv("ALIYUN_ACCESS_KEY_SECRET"),
+            endpoint="mt.aliyuncs.com",
+            qps=50,
+        )
+        # save
+        self.stream = None
+        self.mic = None
+        # config
+        self.from_lang = from_lang
+        self.to_lang = to_lang
+        self.sample_rate = sample_rate
+        self.channels = channels
+        self.block_size = block_size
+        self.device_name = device_name
+
     def on_open(self) -> None:
-        global mic
-        global stream
         print("RecognitionCallback open.")
-        mic = pyaudio.PyAudio()
-        for i in range(mic.get_device_count()):
-            dev_info = mic.get_device_info_by_index(i)
-            if "CABLE Output" in dev_info["name"]:  # 网页2的虚拟设备标识
+        self.mic = pyaudio.PyAudio()
+        for i in range(self.mic.get_device_count()):
+            dev_info = self.mic.get_device_info_by_index(i)
+            # if "CABLE Output" in dev_info["name"]:  # 网页2的虚拟设备标识
+            if self.device_name in dev_info["name"]:  # 网页2的虚拟设备标识
                 device_index = dev_info["index"]
                 break
         else:
             raise Exception("未找到虚拟声卡设备")
-        stream = mic.open(
+
+        self.stream = self.mic.open(
             format=pyaudio.paInt16,
-            channels=channels,
-            rate=sample_rate,
+            channels=self.channels,
+            rate=self.sample_rate,
             input=True,
             input_device_index=device_index,
-            frames_per_buffer=block_size,
+            frames_per_buffer=self.block_size,
         )
 
     def on_close(self) -> None:
-        global mic
-        global stream
         print("RecognitionCallback close.")
-        stream.stop_stream()
-        stream.close()
-        mic.terminate()
-        stream = None
-        mic = None
+        self.stream.stop_stream()
+        self.stream.close()
+        self.mic.terminate()
+        self.stream = None
+        self.mic = None
 
     def on_complete(self) -> None:
         print("RecognitionCallback completed.")  # recognition completed
@@ -93,14 +95,13 @@ class Callback(RecognitionCallback):
         print("RecognitionCallback task_id: ", message.request_id)
         print("RecognitionCallback error: ", message.message)
         # Stop and close the audio stream if it is running
-        if "stream" in globals() and stream.active:
-            stream.stop()
-            stream.close()
+        if "stream" in globals() and self.stream.active:
+            self.stream.stop()
+            self.stream.close()
         # Forcefully exit the program
         sys.exit(1)
 
     def on_event(self, result: RecognitionResult) -> None:
-        global translator
         sentence = result.get_sentence()
         if "text" in sentence:
             # print("RecognitionCallback text: ", sentence["text"])
@@ -109,8 +110,8 @@ class Callback(RecognitionCallback):
                     "RecognitionCallback sentence end, request_id:%s, usage:%s"
                     % (result.get_request_id(), result.get_usage(sentence))
                 )
-                response = translator.translate(
-                    sentence["text"], from_lang="ko", to_lang="zh"
+                response = self.translator.translate(
+                    sentence["text"], from_lang=self.from_lang, to_lang=self.to_lang
                 )
                 # print(response)
                 if response.status_code == 200:
@@ -120,29 +121,28 @@ class Callback(RecognitionCallback):
                     print("Unkown Content:", response)
 
 
-def signal_handler(sig, frame):
-    print("Ctrl+C pressed, stop recognition ...")
-    # Stop recognition
-    recognition.stop()
-    print("Recognition stopped.")
-    print(
-        "[Metric] requestId: {}, first package delay ms: {}, last package delay ms: {}".format(
-            recognition.get_last_request_id(),
-            recognition.get_first_package_delay(),
-            recognition.get_last_package_delay(),
-        )
-    )
-    # Forcefully exit the program
-    sys.exit(0)
-
-
 # main function
 def main():
     init_dashscope_api_key()
     print("Initializing ...")
 
+    # Set recording parameters
+    sample_rate = 16000  # sampling rate (Hz)
+    channels = 1  # mono channel
+    format_pcm = "pcm"  # the format of the audio data
+    block_size = 3200  # number of frames per buffer
+    from_lang = "jp"
+    to_lang = "zh"
+
     # Create the recognition callback
-    callback = Callback()
+    callback = TranslateCallback(
+        from_lang=from_lang,
+        to_lang=to_lang,
+        sample_rate=sample_rate,
+        channels=channels,
+        block_size=block_size,
+        device_name="CABLE Output",
+    )
 
     # Call recognition service by async mode, you can customize the recognition parameters, like model, format,
     # sample_rate For more information, please refer to https://help.aliyun.com/document_detail/2712536.html
@@ -155,19 +155,46 @@ def main():
         # support 8000, 16000
         semantic_punctuation_enabled=False,
         callback=callback,
-        language_hints=["ko"],
+        language_hints=[from_lang],
     )
 
     # Start recognition
     recognition.start()
 
+    def signal_handler(sig, frame):
+        print("Ctrl+C pressed, stop recognition ...")
+        # Stop recognition
+        recognition.stop()
+        print("Recognition stopped.")
+        print(
+            "[Metric] requestId: {}, first package delay ms: {}, last package delay ms: {}".format(
+                recognition.get_last_request_id(),
+                recognition.get_first_package_delay(),
+                recognition.get_last_package_delay(),
+            )
+        )
+        # Forcefully exit the program
+        sys.exit(0)
+
+    """
+    signal库使用参考：
+    - https://docs.python.org/zh-cn/3/library/signal.html
+    - https://cloud.tencent.com/developer/article/1950657
+    常用信号量：
+    signal.SIGHUP   # 连接挂断，这个信号的默认操作为终止进程，因此会向终端输出内容的那些进程就会终止。不过有的进程可以捕捉这个信号并忽略它。比如wget。
+    signal.SIGINT   # 连接中断，程序终止(interrupt)信号，按下CTRL + C的时候触发。
+    signal.SIGTSTP # 暂停进程，停止进程的运行，按下CTRL + Z的时候触发， 该信号可以被处理和忽略。
+    signal.SIGCONT # 继续执行，让一个停止(stopped)的进程继续执行。本信号不能被阻塞。
+    signal.SIGKILL # 终止进程，用来立即结束程序的运行，本信号无法被阻塞、处理和忽略。
+    signal.SIGALRM # 超时警告，时钟定时信号，计算的是实际的时间或时钟时间
+    """
     signal.signal(signal.SIGINT, signal_handler)
     print("Press 'Ctrl+C' to stop recording and recognition...")
     # Create a keyboard listener until "Ctrl+C" is pressed
 
     while True:
-        if stream:
-            data = stream.read(block_size, exception_on_overflow=False)
+        if callback.stream:
+            data = callback.stream.read(block_size, exception_on_overflow=False)
             recognition.send_audio_frame(data)
         else:
             break

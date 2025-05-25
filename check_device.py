@@ -10,3 +10,7 @@ def check_devices():
     for i in range(p.get_device_count()):
         info = p.get_device_info_by_index(i)
         print(f"Index {i}: {info['name']} (InputCh: {info['maxInputChannels']})")
+
+
+if __name__ == "__main__":
+    check_devices()
