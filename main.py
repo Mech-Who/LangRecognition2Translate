@@ -32,10 +32,6 @@ def init_dashscope_api_key():
         dashscope.api_key = "<your-dashscope-api-key>"  # set API-key manually
 
 
-load_dotenv()
-init_dashscope_api_key()
-
-
 # Real-time speech recognition callback
 class TranslateCallback(RecognitionCallback):
     def __init__(
@@ -123,6 +119,7 @@ class TranslateCallback(RecognitionCallback):
 
 # main function
 def main():
+    load_dotenv()
     init_dashscope_api_key()
     print("Initializing ...")
 
@@ -131,7 +128,7 @@ def main():
     channels = 1  # mono channel
     format_pcm = "pcm"  # the format of the audio data
     block_size = 3200  # number of frames per buffer
-    from_lang = "jp"
+    from_lang = "ko"
     to_lang = "zh"
 
     # Create the recognition callback
