@@ -1,0 +1,12 @@
+[general]
+from_lang = "ko"
+to_lang = "zh"
+
+[recognition]
+sample_rate = 16000
+block_size = 3200
+voice_channel = "mono"
+data_format = "pcm"
+
+[translation]
+qps = 10

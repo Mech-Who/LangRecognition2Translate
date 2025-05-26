@@ -14,6 +14,7 @@ from dashscope.audio.asr import Recognition
 from dotenv import load_dotenv
 
 from src.core.recognition_callback import TranslateCallback
+from src.utils.config import config
 
 # custom
 from src.utils.constants import BlockSize, Format, Language, SampleRate, VoiceChannel
@@ -39,12 +40,21 @@ def main():
     print("Initializing ...")
 
     # Set recording parameters
-    sample_rate = SampleRate.SR_16000  # sampling rate (Hz)
-    channels = VoiceChannel.CHANNEL_MONO  # mono channel
-    format_pcm = Format.F_PCM  # the format of the audio data
-    block_size = BlockSize.BS_3200  # number of frames per buffer
-    from_lang = Language.KOREAN
-    to_lang = Language.CHINESE
+    channels = VoiceChannel.from_string(
+        config["recognition"]["voice_channel"]
+    )  # mono channel
+    format_pcm = Format.from_string(
+        config["recognition"]["data_format"]
+    )  # the format of the audio data
+    sample_rate = SampleRate.from_int(
+        config["recognition"]["sample_rate"]
+    )  # sampling rate (Hz)
+    block_size = BlockSize.from_int(
+        config["recognition"]["block_size"]
+    )  # number of frames per buffer
+    from_lang = Language.from_string(config["general"]["from_lang"])
+    to_lang = Language.from_string(config["general"]["to_lang"])
+    qps = config["translation"]["qps"]
 
     # Create the recognition callback
     callback = TranslateCallback(
@@ -54,6 +64,7 @@ def main():
         channels=channels,
         block_size=block_size,
         device_name="CABLE Output",
+        qps=qps,
     )
 
     # Call recognition service by async mode, you can customize the recognition parameters, like model, format,

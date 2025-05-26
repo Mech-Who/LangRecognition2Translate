@@ -13,14 +13,14 @@ from src.core.translater import AliTranslator
 # Real-time speech recognition callback
 class TranslateCallback(RecognitionCallback):
     def __init__(
-        self, from_lang, to_lang, *, sample_rate, channels, block_size, device_name
+        self, from_lang, to_lang, *, sample_rate, channels, block_size, device_name, qps
     ):
         # translator
         self.translator = AliTranslator(
             access_key_id=os.getenv("ALIYUN_ACCESS_KEY_ID"),
             access_key_secret=os.getenv("ALIYUN_ACCESS_KEY_SECRET"),
             endpoint="mt.aliyuncs.com",
-            qps=10,
+            qps=qps,
         )
         # save
         self.stream = None
