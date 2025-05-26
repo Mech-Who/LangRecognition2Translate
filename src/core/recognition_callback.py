@@ -5,6 +5,7 @@ import sys
 # third-party
 import pyaudio
 from dashscope.audio.asr import RecognitionCallback, RecognitionResult
+from loguru import logger
 
 # custom
 from src.core.translater import AliTranslator
@@ -34,7 +35,7 @@ class TranslateCallback(RecognitionCallback):
         self.device_name = device_name
 
     def on_open(self) -> None:
-        print("RecognitionCallback open.")
+        logger.info("Recognition callback open.")
         self.mic = pyaudio.PyAudio()
         for i in range(self.mic.get_device_count()):
             dev_info = self.mic.get_device_info_by_index(i)
@@ -43,7 +44,8 @@ class TranslateCallback(RecognitionCallback):
                 device_index = dev_info["index"]
                 break
         else:
-            raise Exception("未找到虚拟声卡设备")
+            logger.error("未找到虚拟声卡设备！")
+            raise Exception("未找到虚拟声卡设备！")
 
         self.stream = self.mic.open(
             format=pyaudio.paInt16,
@@ -55,7 +57,7 @@ class TranslateCallback(RecognitionCallback):
         )
 
     def on_close(self) -> None:
-        print("RecognitionCallback close.")
+        logger.info("Recognition callback close.")
         self.stream.stop_stream()
         self.stream.close()
         self.mic.terminate()
@@ -63,11 +65,11 @@ class TranslateCallback(RecognitionCallback):
         self.mic = None
 
     def on_complete(self) -> None:
-        print("RecognitionCallback completed.")  # recognition completed
+        logger.info("Recognition callback completed.")  # recognition completed
 
     def on_error(self, message) -> None:
-        print("RecognitionCallback task_id: ", message.request_id)
-        print("RecognitionCallback error: ", message.message)
+        logger.info("Recognition callback task_id: ", message.request_id)
+        logger.info("Recognition callback error: ", message.message)
         # Stop and close the audio stream if it is running
         if "stream" in globals() and self.stream.active:
             self.stream.stop()
@@ -80,9 +82,8 @@ class TranslateCallback(RecognitionCallback):
         if "text" in sentence:
             # print("RecognitionCallback text: ", sentence["text"])
             if RecognitionResult.is_sentence_end(sentence):
-                print(
-                    "RecognitionCallback sentence end, request_id:%s, usage:%s"
-                    % (result.get_request_id(), result.get_usage(sentence))
+                logger.info(
+                    f"Recognition callback sentence end, request_id:{result.get_request_id()}, usage:{result.get_usage(sentence)}"
                 )
                 response = self.translator.translate(
                     sentence["text"], from_lang=self.from_lang, to_lang=self.to_lang
@@ -90,6 +91,6 @@ class TranslateCallback(RecognitionCallback):
                 # print(response)
                 if response.status_code == 200:
                     translate_text = response.body.data.translated
-                    print("TranslateText: ", translate_text)
+                    logger.info(f"TranslateText: {translate_text}")
                 else:
-                    print("Unkown Content:", response)
+                    logger.info(f"Unkown Content: {response}")

@@ -7,16 +7,17 @@
 import os
 import signal  # for keyboard events handling (press "Ctrl+C" to terminate recording)
 import sys
+from datetime import datetime
 
 # third-party
 import dashscope
 from dashscope.audio.asr import Recognition
 from dotenv import load_dotenv
-
-from src.core.recognition_callback import TranslateCallback
-from src.utils.config import config
+from loguru import logger
 
 # custom
+from src.core.recognition_callback import TranslateCallback
+from src.utils.config import config
 from src.utils.constants import BlockSize, Format, Language, SampleRate, VoiceChannel
 
 
@@ -37,7 +38,9 @@ def init_dashscope_api_key():
 def main():
     load_dotenv()
     init_dashscope_api_key()
-    print("Initializing ...")
+    logger.add(f"logs/{datetime.now().strftime('%Y%m%d')}.log")
+
+    logger.info("Initializing ...")
 
     # Set recording parameters
     channels = VoiceChannel.from_string(
@@ -85,11 +88,11 @@ def main():
     recognition.start()
 
     def signal_handler(sig, frame):
-        print("Ctrl+C pressed, stop recognition ...")
+        logger.info("Ctrl+C pressed, stop recognition ...")
         # Stop recognition
         recognition.stop()
-        print("Recognition stopped.")
-        print(
+        logger.info("Recognition stopped.")
+        logger.info(
             "[Metric] requestId: {}, first package delay ms: {}, last package delay ms: {}".format(
                 recognition.get_last_request_id(),
                 recognition.get_first_package_delay(),
@@ -112,7 +115,7 @@ def main():
     signal.SIGALRM # 超时警告，时钟定时信号，计算的是实际的时间或时钟时间
     """
     signal.signal(signal.SIGINT, signal_handler)
-    print("Press 'Ctrl+C' to stop recording and recognition...")
+    logger.info("Press 'Ctrl+C' to stop recording and recognition...")
     # Create a keyboard listener until "Ctrl+C" is pressed
 
     while True:
