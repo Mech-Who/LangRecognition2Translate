@@ -1,0 +1,16 @@
+handlers:
+  - sink: ext://sys.stderr
+    format: "[{time}] {message}"
+  - sink: file.log
+    enqueue: true
+    serialize: true
+levels:
+  - name: NEW
+    "no": 13
+    icon: ¤
+    color: ""
+extra:
+  common_to_all: default
+  activation:
+    - ["src.core", true]
+    - ["src.gui", false]

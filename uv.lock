@@ -536,6 +536,7 @@ dependencies = [
     { name = "alibabacloud-alimt20181012" },
     { name = "dashscope" },
     { name = "loguru" },
+    { name = "loguru-config" },
     { name = "pyaudio" },
     { name = "pytest" },
     { name = "python-box" },
@@ -549,6 +550,7 @@ requires-dist = [
     { name = "alibabacloud-alimt20181012", specifier = ">=1.4.0" },
     { name = "dashscope", specifier = ">=1.23.2" },
     { name = "loguru", specifier = ">=0.7.3" },
+    { name = "loguru-config", specifier = ">=0.1.0" },
     { name = "pyaudio", specifier = ">=0.2.14" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "python-box", specifier = ">=7.3.2" },
@@ -569,6 +571,15 @@ sdist = { url = "https://mirrors.aliyun.com/pypi/packages/3a/05/a1dae3dffd111609
 wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/0c/29/0348de65b8cc732daa3e33e67806420b2ae89bdce2b04af740289c5c6c8c/loguru-0.7.3-py3-none-any.whl", hash = "sha256:31a33c10c8e1e10422bfd431aeb5d351c7cf7fa671e3c4df004162264b28220c" },
 ]
+
+[[package]]
+name = "loguru-config"
+version = "0.1.0"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
+dependencies = [
+    { name = "loguru" },
+]
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/2e/c7/e9528e9439214e885ce04fb68725ee1d10d64f333a9d68c9ea1545089cab/loguru-config-0.1.0.tar.gz", hash = "sha256:432fbc134b118cdfbe0de0226eaab3f5247fc142cd005bf1ebe471f7c572aa34" }
 
 [[package]]
 name = "multidict"

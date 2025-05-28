@@ -7,6 +7,8 @@
 import os
 import signal  # for keyboard events handling (press "Ctrl+C" to terminate recording)
 import sys
+
+# import asyncio
 from datetime import datetime
 
 # third-party
@@ -14,6 +16,7 @@ import dashscope
 from dashscope.audio.asr import Recognition
 from dotenv import load_dotenv
 from loguru import logger
+from loguru_config import LoguruConfig
 
 # custom
 from src.core.recognition_callback import TranslateCallback
@@ -34,8 +37,15 @@ def init_dashscope_api_key():
         dashscope.api_key = "<your-dashscope-api-key>"  # set API-key manually
 
 
+config_path = "./loguru.json"
+
+
 # main function
 def main():
+    # with open(config_path, "r") as f:
+    #     log_config = load(f)
+    # logger.debug(log_config)
+    LoguruConfig.load(config_path)
     load_dotenv()
     init_dashscope_api_key()
     logger.add(f"logs/{datetime.now().strftime('%Y%m%d')}.log")
@@ -130,3 +140,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # asyncio.run(main())
